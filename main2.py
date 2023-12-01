@@ -1,39 +1,12 @@
 import random
 import time
 
-grid_size: int = 20
+grid_size: int = 5
 max_population_size = 1000
-mutation_rate = 0.01
-
-
-def _is_connected(crossword_grid):
-    visited = set()
-
-    def dfs(node):
-        if node in visited:
-            return
-        visited.add(node)
-
-        # Check neighbors in horizontal and vertical directions
-        for i, (word, start, orientation) in enumerate(crossword_grid):
-            if orientation == 'h':
-                if start[0] <= node[0] < start[0] + len(word) and start[1] == node[1]:
-                    dfs((start[0] - 1, start[1]))
-                    dfs((start[0] + len(word), start[1]))
-            elif orientation == 'v':
-                if start[0] == node[0] and start[1] <= node[1] < start[1] + len(word):
-                    dfs((start[0], start[1] - 1))
-                    dfs((start[0], start[1] + len(word)))
-
-    # Start DFS from the first letter of the first word
-    dfs((crossword_grid[0][1][0], crossword_grid[0][1][1]))
-
-    # Check if all letters are visited
-    return len(visited) == sum(len(word) for word, _, _ in crossword_grid)
+mutation_rate = 0.1
 
 
 def _select_parents(population):
-
     # Calculate the fitness score for each individual in the population
     fitness_scores = [individual[-1] for individual in population]
 
@@ -49,7 +22,6 @@ def _select_parents(population):
 
 
 def _select_best_individual(population):
-
     # Calculate the fitness score for each individual in the population
     fitness_scores = [individual[-1] for individual in population]
 
@@ -82,7 +54,7 @@ class CrosswordGenerator:
         best_individual = _select_best_individual(population)
         cnt += 1
 
-        while best_individual[-1] != len(self.words) - 1:
+        while best_individual[-1] <= 20:
             parent1, parent2 = _select_parents(population)
             offspring = self._crossover(parent1, parent2)
             mutated_offspring = self._mutate(offspring)
@@ -90,7 +62,7 @@ class CrosswordGenerator:
                 mutated_offspring[:-1])
             best_individual = _select_best_individual(population)
             cnt += 1
-            if cnt == 1000:
+            if cnt == 10000:
                 break
 
         # Record the end time
@@ -99,6 +71,8 @@ class CrosswordGenerator:
         # Calculate and print the elapsed time
         elapsed_time = end_time - start_time
         print(f"Elapsed Time: {elapsed_time} seconds")
+
+        print(best_individual[-1])
 
         print("Crossword Puzzle:")
         self._print(best_individual)
@@ -110,15 +84,15 @@ class CrosswordGenerator:
             crossword_grid = self._generate_random_grid()
             # for row in crossword_grid:
             #     print(row)
-            # self._print(crossword_grid)
+            self._print(crossword_grid)
 
             self.row = list(range(self.grid_size))
             self.col = list(range(self.grid_size))
 
             population.append(self._initialize_fitness_score(crossword_grid))
-            # for item in population[i]:
-            #     print(item)
-            # print("---------------------------------")
+            for item in population[i]:
+                print(item)
+            print("---------------------------------")
 
         return population
 
@@ -136,25 +110,25 @@ class CrosswordGenerator:
     def _place_word_horizontally(self, grid, word, field):
         cnt = 0
         while cnt != 400:
-            row = random.randint(0, self.grid_size - len(word))
+            row = random.randint(0, self.grid_size - 1)
             col = random.randint(0, self.grid_size - len(word))
             flag = True
             for j in range(col, col + len(word)):
-                if field[row][j] != '1' and field[row][j] != ' ':
+                if field[row][j] == '0' or field[row][j] == '*' or field[row][j] == 'h':
                     flag = False
                     break
             if flag:
                 index = 0
                 for j in range(col, col + len(word)):
-                    field[row][j] = word[index]
+                    field[row][j] = "h"
                     if row - 1 >= 0:
                         field[row - 1][j] = "0"
-                    if row + 1 <= self.grid_size:
+                    if row + 1 < self.grid_size:
                         field[row + 1][j] = "0"
                     index += 1
                 if col - 1 >= 0:
                     field[row][col - 1] = "*"
-                if col + len(word) + 1 <= self.grid_size:
+                if col + len(word) + 1 < self.grid_size:
                     field[row][col + len(word)] = "*"
                 break
             cnt += 1
@@ -168,62 +142,105 @@ class CrosswordGenerator:
         cnt = 0
         while cnt != 400:
             row = random.randint(0, self.grid_size - len(word))
-            col = random.randint(0, self.grid_size - len(word))
+            col = random.randint(0, self.grid_size - 1)
             flag = True
             for i in range(row, row + len(word)):
-                if field[i][col] != '0' and field[i][col] != ' ':
+                if field[i][col] == '1' or field[i][col] == '*' or field[i][col] == 'v':
                     flag = False
                     break
             if flag:
                 index = 0
                 for i in range(row, row + len(word)):
-                    field[i][col] = word[index]
+                    field[i][col] = "v"
                     if col - 1 >= 0:
                         field[i][col - 1] = "1"
-                    if col + 1 <= self.grid_size:
+                    if col + 1 < self.grid_size:
                         field[i][col + 1] = "1"
                     index += 1
                 if row - 1 >= 0:
                     field[row - 1][col] = "*"
-                if row + len(word) + 1 <= self.grid_size:
-                      field[row + len(word)][col] = "*"
+                if row + len(word) + 1 < self.grid_size:
+                    field[row + len(word)][col] = "*"
                 break
             cnt += 1
         else:
             self._place_word_horizontally(grid, words, field)
             return
         grid.append([row, col])
-        grid.append('h')
+        grid.append('v')
 
     def _initialize_fitness_score(self, grid):
+        penalty = 0
         temp_grid = grid
         if temp_grid[0][0] not in self.words:
             for i in range(len(self.words)):
                 temp_grid[i].insert(0, words[i])
+
+        # Check if the grid is connected
+        if self._is_grid_connected(temp_grid):
+            # Penalize the grid for being disconnected
+            penalty += 10
 
         intersections = 0
         for i, (word, start, orientation) in enumerate(temp_grid):
             for j, (other_word, other_start, other_orientation) in enumerate(temp_grid[i + 1:]):
                 if orientation == 'h' and other_orientation == 'v':
                     intersect = (start[0], other_start[1])
-                    if intersect[0] >= other_start[0] and intersect[0] < other_start[0] + len(other_word) and intersect[
-                        1] >= start[1] and intersect[1] < start[1] + len(word):
-                        # intersections.append((intersect, word[intersect[1] - start[1]], other_word[intersect[0] - other_start[0]]))
+                    if other_start[0] <= intersect[0] < other_start[0] + len(other_word) and start[1] <= intersect[1] <\
+                            start[1] + len(word):
                         if word[intersect[1] - start[1]] == other_word[intersect[0] - other_start[0]]:
+                            # penalty += 5
                             intersections += 1
-                        else:
-                            intersections -= 4
+                        # else:
+                            # penalty += 1
                 elif orientation == 'v' and other_orientation == 'h':
                     intersect = (other_start[0], start[1])
-                    if intersect[1] >= other_start[1] and intersect[1] < other_start[1] + len(other_word) and intersect[
-                        0] >= start[0] and intersect[0] < start[0] + len(word):
-                        # intersections.append((intersect, word[intersect[0] - start[0]], other_word[intersect[1] - other_start[1]]))
+                    if other_start[1] <= intersect[1] < other_start[1] + len(other_word) and start[0] <= intersect[0] <\
+                            start[0] + len(word):
                         if word[intersect[0] - start[0]] == other_word[intersect[1] - other_start[1]]:
+                            # penalty += 5
                             intersections += 1
-                        else:
-                            intersections -= 4
-        temp_grid.append(intersections)
+                        # else:
+                            # penalty += 1
+        if intersections == len(word) - 1:
+            penalty += 10
+        temp_grid.append(penalty)
         return temp_grid
+
+    def _is_grid_connected(self, grid):
+
+        adjacency_list = {i: [] for i in range(len(grid))}
+
+        for i, (word, start, orientation) in enumerate(grid):
+            for j, (other_word, other_start, other_orientation) in enumerate(grid[i + 1:]):
+                if orientation == 'h' and other_orientation == 'v':
+                    intersect = (start[0], other_start[1])
+                    if other_start[0] <= intersect[0] < other_start[0] + len(other_word) and start[1] <= intersect[1] < \
+                            start[1] + len(word):
+                        adjacency_list[i].append(i + 1 + j)
+                        adjacency_list[i + 1 + j].append(i)
+
+                elif orientation == 'v' and other_orientation == 'h':
+                    intersect = (other_start[0], start[1])
+                    if other_start[1] <= intersect[1] < other_start[1] + len(other_word) and start[0] <= intersect[0] < \
+                            start[0] + len(word):
+                        adjacency_list[i].append(i + 1 + j)
+                        adjacency_list[i + 1 + j].append(i)
+
+        # Perform DFS to check connectivity
+        visited = set()
+
+        def dfs(node):
+            visited.add(node)
+            for neighbor in adjacency_list[node]:
+                if neighbor not in visited:
+                    dfs(neighbor)
+
+        # Start DFS from the first node
+        dfs(0)
+
+        # Check if all nodes are visited
+        return len(visited) == len(grid)
 
     def _crossover(self, parent1, parent2):
 
@@ -302,8 +319,8 @@ class CrosswordGenerator:
             print(' '.join(row))
 
 
-words = ['apple', 'banana', 'cherry', 'date', 'elderberry']
-# words = ['zoo', 'goal', 'owl', 'as']
+# words = ['apple', 'banana', 'cherry', 'date', 'elderberry']
+words = ['zoo', 'goal', 'owl', 'as']
 
 crossword_generator = CrosswordGenerator(words)
 crossword = crossword_generator.generate_crossword()
