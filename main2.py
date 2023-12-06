@@ -1,6 +1,7 @@
 import random
 import time
 
+
 def select_parents(population):
     """
     Selects two individuals according the best fitness scores
@@ -54,7 +55,7 @@ def select_best_individual(population):
 
 def _is_grid_connected(grid):
     """
-    Checks wheter current crossword is connected using DFS method
+    Checks whether current crossword is connected using DFS method
     :param grid: current crossword - individual
     :return: True, if it's connected, False, otherwise
     """
@@ -93,6 +94,22 @@ def _is_grid_connected(grid):
     return len(visited) == len(grid)
 
 
+def _crossover(parent1, parent2):
+    """
+    Uses parents to create new offspring through randomly taking word with its parameters from 2 parents
+    :param parent1: one crossword
+    :param parent2: another crossword
+    :return: crossword is gotten from parents crossing
+    """
+    offspring = []
+    for i in range(len(parent1)):
+        if random.choice([True, False]):
+            offspring.append(parent1[i])
+        else:
+            offspring.append(parent2[i])
+    return offspring
+
+
 class CrosswordGenerator:
     """
     This class represents all functions related to generating crossword using Genetic Algorithm
@@ -110,9 +127,9 @@ class CrosswordGenerator:
         self.mutation_rate = mut_rate
         self.row = list(range(self.grid_size))
         self.col = list(range(self.grid_size))
+
         # It equals to the length of word that has maximal length
         self.MaxLen = len(max(words_list, key=len))
-
 
     def generate_crossword(self):
         """
@@ -139,14 +156,13 @@ class CrosswordGenerator:
             temp_population = []
 
             while len(population) > 0:
-
                 # Select the two individuals with the highest fitness score
                 parent1, parent2 = select_parents(population)
 
                 population.remove(parent1)
                 population.remove(parent2)
                 # Create an offspring through crossover
-                offspring = self._crossover(parent1, parent2)
+                offspring = _crossover(parent1, parent2)
 
                 # Mutate the offspring
                 mutated_offspring = self._mutate(offspring)
@@ -172,11 +188,7 @@ class CrosswordGenerator:
             if cnt == 50000:
                 temp_population = self._initialize_population()
 
-            print("Current crossword Puzzle:")
-            print(best_individual[-1])
-            print(best_individual)
-            bestie = best_individual.copy()
-            self._print(bestie)
+            # Update new population
             population = temp_population
 
         # Record the end time
@@ -186,10 +198,12 @@ class CrosswordGenerator:
         elapsed_time = end_time - start_time
         print(f"Elapsed Time: {elapsed_time} seconds")
 
-        print(best_individual[-1])
-
-        print("Crossword Puzzle:")
-        self._print(best_individual.copy())
+        if best_individual[-1] != 0:
+            print("The program didn't solve the task :(")
+            self._print(best_individual)
+        else:
+            print("Generated crossword:")
+            self._print(best_individual)
         return best_individual
 
     def _initialize_population(self):
@@ -201,117 +215,68 @@ class CrosswordGenerator:
         for i in range(max_population_size):
             # Generate the one individual(crossword grid)
             crossword_grid = self.generate_grid()
-            # for row in crossword_grid:
-            #     print(row)
-            # self._print(crossword_grid)
-            # print("---------------------------------")
-            # self.row = list(range(self.grid_size))
-            # self.col = list(range(self.grid_size))
 
             # Initializes fitness score for the individual and add to population
             population.append(self._initialize_fitness_score(crossword_grid))
-            # for item in population[i]:
-            #     print(item)
-            # print("---------------------------------")
-
         return population
 
     def generate_grid(self):
-        # field = [[' ' for _ in range(grid_size)] for _ in range(grid_size)]
+        """
+        Generates new crossword putting words randomly in horizontal and vertical orientations(by calling functions)
+        :return: randomly generated version of solution
+        """
         grid = [[] for _ in range(len(self.words))]
         for i in range(len(self.words)):
             if random.choice([True, False]):
                 self._place_word_horizontally(grid[i], self.words[i])
             else:
                 self._place_word_vertically(grid[i], self.words[i])
-
         return grid
 
     def _place_word_horizontally(self, grid, word):
-        # if len(self.row) != 0:
-        #     row = random.choice(self.row)
-        # else:
-        #     self._place_word_vertically(grid, words)
-        #     return
+        """
+        Puts a word in random place with horizontal orientation
+        :param grid: current crossword
+        :param word: word to be placed
+        :return: none
+        """
+        # I tried to minimize time of finding a solution decreasing a map
+        # to be equal to maximal length of word from lexicon
         col = random.randint(0, self.MaxLen - len(word))
         row = random.randint(0, self.MaxLen - 1)
 
         grid.append([row, col])
         grid.append('h')
 
-        # self.row.remove(row)
-        # if row + 1 in self.row:
-        #     self.row.remove(row + 1)
-        # if row - 1 in self.row:
-        #     self.row.remove(row - 1)
-
     def _place_word_vertically(self, grid, word):
-        set1 = set([i for i in range(0, self.grid_size)])
-        set2 = set([i for i in range(0, self.grid_size - len(word))])
+        """
+        Puts a word in random place with vertical orientation
+        :param grid: current crossword
+        :param word: word to be places
+        :return: none
+        """
+        # I tried to minimize time of finding a solution decreasing a map
+        # to be equal to maximal length of word from lexicon
         row = random.randint(0, self.MaxLen - len(word))
         col = random.randint(0, self.MaxLen - 1)
-        # if len(self.col) != 0:
-        #     col = random.choice(self.col)
-        # else:
-        #     self._place_word_horizontally(grid, words)
-        #     return
 
         grid.append([row, col])
         grid.append('v')
 
-        # self.col.remove(col)
-        # if col + 1 in self.col:
-        #     self.col.remove(col + 1)
-        # if col - 1 in self.col:
-        #     self.col.remove(col - 1)
-
-    def _crossover(self, parent1, parent2):
-        """
-        Uses parents to create new offspring through
-        :param parent1:
-        :param parent2:
-        :return:
-        """
-        offspring = []
-        for i in range(len(parent1)):
-            if random.choice([True, False]):
-                offspring.append(parent1[i])
-            else:
-                offspring.append(parent2[i])
-
-        # crossover_point = random.randint(1, len(self.words))
-        #
-        # # Perform crossover by swapping the rows at the crossover point
-        # offspring = parent1[:crossover_point] + parent2[crossover_point:]
-        #
-        # return offspring
-        # Randomly select two crossover points
-
-        # crossover_point1 = random.randint(1, len(self.words) - 1)
-        # crossover_point2 = random.randint(crossover_point1 + 1, len(self.words))
-        #
-        # # Perform two-point crossover by swapping the rows between the two points
-        # offspring = parent1[:crossover_point1] + parent2[crossover_point1:crossover_point2] + parent1[crossover_point2:]
-
-        return offspring
-
     def _mutate(self, individual):
         """
-
-        :param individual:
-        :return:
+        Make some changes in generated crossword
+        :param individual: generated crossword
+        :return: mutated generated crossword
         """
-        temp_words = self.words
-
         if random.random() < self.mutation_rate:
             mutation_type = random.choice(['change_word', 'change_coordinates', 'change_orientation'])
-
             if mutation_type == 'change_word':
                 # Randomly change the word at this position
-                word1 = random.choice(temp_words)
-                word2 = random.choice(temp_words)
+                word1 = random.choice(self.words)
+                word2 = random.choice(self.words)
                 while word1 == word2:
-                    word2 = random.choice(temp_words)
+                    word2 = random.choice(self.words)
                 index1 = self.words.index(word1)
                 index2 = self.words.index(word2)
 
@@ -331,8 +296,8 @@ class CrosswordGenerator:
 
             elif mutation_type == 'change_coordinates':
                 # Randomly change coordinates of a word
-                word = random.choice(temp_words)
-                index = temp_words.index(word)
+                word = random.choice(self.words)
+                index = self.words.index(word)
 
                 if individual[index][2] == 'h':
                     new_start_col = random.randint(0, self.MaxLen - len(word))
@@ -345,136 +310,88 @@ class CrosswordGenerator:
 
             elif mutation_type == 'change_orientation':
                 # Randomly change the orientation of the word at this position
-                word = random.choice(temp_words)
-                index = temp_words.index(word)
-
+                word = random.choice(self.words)
+                index = self.words.index(word)
                 individual[index][2] = 'v' if individual[index][2] == 'h' else 'h'
-
         return individual
 
-    def _initialize_fitness_score(self, grid):
+    def _initialize_fitness_score(self, temp_grid):
         """
+        Evaluates how bad is a generated crossword is by collecting penalty for improper placement
+        :param temp_grid: generated crossword
+        :return: generated crossword with a penalty value
+        """
+        # Initial penalty
+        penalty = 0
 
-        :param grid:
-        :return:
-        """
-        points = 0
-        temp_grid = grid
+        # Adding a word to make easier determine whose coordinates are
         if temp_grid[0][0] not in self.words:
             for i in range(len(self.words)):
                 temp_grid[i].insert(0, self.words[i])
 
         # Check if the grid is connected
-        if not(_is_grid_connected(temp_grid)):
+        if not (_is_grid_connected(temp_grid)):
             # Penalize the grid for being disconnected
-            # points += len(self.words)
-            points -= 1
-        # else:
-        #     points -= len(self.words)
-
-        # for row1 in grid:
-        #     for row2 in grid:
-        #         if row1 != row2:
-        #             if (abs(row1[1][1] - row2[1][1]) <= 1 and row1[2] == row2[2] == "v") or (
-        #                     abs(row1[1][0] - row2[1][0]) <= 1 and row1[2] == row2[2] == "h"):
-        #                 points -= 1
-        #             else:
-        #                 points += 1
-        #             if (row1[2] == "h" and row2[2] == "v"):
-        #                 set = [i for i in range(row1[1][1], row1[1][1] + len(row1[0]))]
-        #                 set2 = [i for i in range(row2[1][0], row2[1][0] + len(row2[0]))]
-        #                 if (abs(row1[1][0] - row2[1][0]) <= 1 and row2[1][1] in set) or ((abs(
-        #                         row2[1][1] - row1[1][1]) <= 1 or abs(
-        #                     row2[1][1] + len(row2[0]) - row1[1][1] + len(row1[0]))) and row1[1][0] in set2):
-        #                     points -= 1
-        #             else:
-        #                 set = [i for i in range(row2[1][1], row2[1][1] + len(row2[0]))]
-        #                 set2 = [i for i in range(row1[1][0], row1[1][0] + len(row1[0]))]
-        #                 if (abs(row2[1][0] - row1[1][0]) <= 1 and row1[1][1] in set) or ((abs(
-        #                         row1[1][1] - row2[1][1]) <= 1 or abs(
-        #                     row2[1][1] + len(row2[0]) - row1[1][1] + len(row1[0]))) and row2[1][0] in set2):
-        #                     points -= 1
-
-        intersections = 0
-        temp_set = [i for i in range(0, len(self.words))]
+            penalty -= 1
+        # Check and penalize if there are improper placement or improper crossings
         for i, (word, start, orientation) in enumerate(temp_grid):
             for j, (other_word, other_start, other_orientation) in enumerate(temp_grid[i + 1:]):
+
                 if orientation == 'h' and other_orientation == 'v':
                     set_rows = [i for i in range(other_start[0], other_start[0] + len(other_word))]
                     set_col = [i for i in range(start[1], start[1] + len(word))]
                     if (abs(start[1] + len(word) - 1 - other_start[1]) == 1 and start[0] in set_rows) or (
                             other_start[1] in set_col and start[0] - other_start[0] == - 1):
-                        points -= 1
+                        penalty -= 1
+
                 elif orientation == 'v' and other_orientation == 'h':
                     set_rows = [i for i in range(start[0], start[0] + len(word))]
                     set_col = [i for i in range(other_start[1], other_start[1] + len(word))]
-                    if (abs(start[1] - other_start[1]) == 1 and other_start[0] in set_rows and not(start[1] in set_col)) or (
+                    if (abs(start[1] - other_start[1]) == 1 and other_start[0] in set_rows and not (
+                            start[1] in set_col)) or (
                             start[1] in set_col and abs(start[0] + len(word) - 1 - other_start[0]) == 1):
-                        points -= 1
+                        penalty -= 1
+
                 elif orientation == 'v' and other_orientation == 'v':
                     set_rows = set([i for i in range(other_start[0], other_start[0] + len(other_word))])
                     set_rows2 = set([i for i in range(start[0], start[0] + len(word))])
                     if (abs(start[1] - other_start[1]) <= 1 and len(set_rows.intersection(set_rows2)) != 0) or (
                             start[1] == other_start[1] and abs(start[0] + len(word) - 1 - other_start[0]) == 1):
-                        points -= 1
+                        penalty -= 1
+
                 elif orientation == 'h' and other_orientation == 'h':
                     set_rows = set([i for i in range(other_start[1], other_start[1] + len(other_word))])
                     set_rows2 = set([i for i in range(start[1], start[1] + len(word))])
                     if (abs(start[0] - other_start[0]) <= 1 and len(set_rows.intersection(set_rows2)) != 0) or (
                             start[0] == other_start[0] and abs(start[1] + len(word) - 1 - other_start[1]) == 1):
-                        points -= 1
+                        penalty -= 1
 
                 if orientation == 'h' and other_orientation == 'v':
                     intersect = (start[0], other_start[1])
-                    if other_start[0] <= intersect[0] < other_start[0] + len(other_word) and start[1] <= intersect[1] < \
-                            start[1] + len(word):
-                        if word[intersect[1] - start[1]] == other_word[intersect[0] - other_start[0]]:
-                            # points += 1
-                            intersections += 1
-                        else:
-                            points -= 1
+                    if other_start[0] <= intersect[0] < other_start[0] + len(other_word) and start[1] \
+                            <= intersect[1] < start[1] + len(word):
+                        if word[intersect[1] - start[1]] != other_word[intersect[0] - other_start[0]]:
+                            penalty -= 1
+
                 elif orientation == 'v' and other_orientation == 'h':
                     intersect = (other_start[0], start[1])
-                    if other_start[1] <= intersect[1] < other_start[1] + len(other_word) and start[0] <= intersect[0] < \
-                            start[0] + len(word):
-                        if word[intersect[0] - start[0]] == other_word[intersect[1] - other_start[1]]:
-                            # points += 1
-                            intersections += 1
-                        else:
-                            points -= 1
-        # if intersections == len(self.words) - 1:
-        #     points += 10
-        # else:
-        #     points -= 5
-        # if penalty == aim_penalty:
-        #     points += 5
-        # elif penalty >= aim_penalty/2:
-        #     points += 3
-        # elif penalty <= aim_penalty/2 and penalty != 0:
-        #     points += 1
-        #
-        # points += aim_penalty - penalty
-        temp_grid.append(points)
+                    if other_start[1] <= intersect[1] < other_start[1] + len(other_word) and start[0] \
+                            <= intersect[0] < start[0] + len(word):
+                        if word[intersect[0] - start[0]] != other_word[intersect[1] - other_start[1]]:
+                            penalty -= 1
+
+        temp_grid.append(penalty)
         return temp_grid
 
-    def _print(self, crossie):
+    def _print(self, crossword_grid):
         """
+        Decodes the keeping crossword and prints it in classical way
+        :param crossword_grid: crossword
+        :return: none
+        """
+        grid = [['.' for _ in range(self.grid_size)] for _ in range(self.grid_size)]
 
-        :param crossword_grid:
-        :return:
-        """
-        crossword_grid = []
-        for thing in crossie:
-            crossword_grid.append(thing)
-        grid = [[' ' for _ in range(self.grid_size)] for _ in range(self.grid_size)]
         index = 0
-        # for row in crossword_grid:
-        #     if isinstance(row, int):
-        #         crossword_grid.remove(row)
-        #     elif len(row) == 3:
-        #         row.remove(row[0])
-        #     else:
-        #         break
         for row in crossword_grid:
             if isinstance(row, int):
                 continue
@@ -486,11 +403,10 @@ class CrosswordGenerator:
                     grid[i + row[1][0]][row[1][1]] = self.words[index][i]
             index += 1
         for row in grid:
-            print(' '.join(row))
+            print('.'.join(row))
 
 
-words = ['apple', 'banana', 'cherry']
-# words = ['zoo', 'goal', 'owl', 'as']
+words = ['zoo', 'goal', 'owl']
 grid_size: int = 20
 max_population_size = 1000
 mutation_rate = 0.6
