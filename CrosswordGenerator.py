@@ -1,7 +1,5 @@
 import random
 import time
-import matplotlib.pyplot as plt
-import numpy as np
 
 def select_parents(population):
     """
@@ -151,9 +149,9 @@ class CrosswordGenerator:
         best_individual = select_best_individual(population)
         cnt += 1
         # Set a time limit (e.g., 1 second) for each test
-        time_limit_per_test = 1.0
+        time_limit_per_test = 20.0
         # Loop that controls individuals generation
-        while time.time() - start_time < time_limit_per_test and best_individual[-1] != 0 and cnt != 1000:
+        while time.time() - start_time < time_limit_per_test and best_individual[-1] != 0 and cnt != 10000:
 
             temp_population = []
 
@@ -175,11 +173,11 @@ class CrosswordGenerator:
             # Sorting the population by fitness score descending
             population = sorted(population2, key=lambda individual: individual[-1], reverse=True)
 
-            i = 0
+            k = 0
             # Filling the new population with old individuals
             while len(temp_population) != max_population_size:
-                temp_population.append(population[i])
-                i += 1
+                temp_population.append(population[k])
+                k += 1
 
             # Searching the individual with the best fitness score
             best_individual = select_best_individual(population)
@@ -187,7 +185,7 @@ class CrosswordGenerator:
             cnt += 1
 
             # In case, when the population stucks in local maximum
-            if cnt == 500:
+            if cnt == 5000:
                 temp_population = self._initialize_population()
 
             # Update new population
@@ -198,14 +196,8 @@ class CrosswordGenerator:
 
         # Calculate and print the elapsed time
         elapsed_time = end_time - start_time
-        print(f"Elapsed Time: {elapsed_time} seconds")
+        # print(f"Elapsed Time: {elapsed_time} seconds")
 
-        if best_individual[-1] != 0:
-            print("The program didn't solve the task :(")
-            self._print(best_individual)
-        else:
-            print("Generated crossword:")
-            self._print(best_individual)
         return best_individual
 
     def _initialize_population(self):
@@ -407,81 +399,28 @@ class CrosswordGenerator:
         for row in grid:
             print(' '.join(row))
 
-
-words = ['apple', 'banana', 'ape']
 grid_size: int = 20
 max_population_size = 1000
 mutation_rate = 0.6
-crossword_generator = CrosswordGenerator(words, grid_size, mutation_rate)
-crossword = crossword_generator.generate_crossword()
 
-def run_tests():
-    num_tests = 100
-    word_counts = [2, 3, 4]  # You can extend this list with the desired word counts
+for i in range(1, 5):
+    with open(f'inputs/input{i}.txt', 'r') as f:
+        words = f.read().splitlines()
 
-    avg_fitness_results = []
-    max_fitness_results = []
-
-    for word_count in word_counts:
-        avg_final_fitness = 0
-        max_final_fitness = 0
-
-        for _ in range(num_tests):
-            start_time = time.time()
-
-            # Initialize the CrosswordGenerator with a specific number of words
-            words_subset = words[:word_count]
-            crossword_generator = CrosswordGenerator(words_subset, grid_size, mutation_rate)
-
-            # Set a time limit (e.g., 1 second) for each run
-            time_limit = 1.0
-
-            try:
-                # Run the algorithm until time limit is reached
-                while time.time() - start_time < time_limit:
-                    crossword = crossword_generator.generate_crossword()
-                    final_fitness = crossword[-1]
-
-                    # If a solution is found, break out of the loop
-                    if final_fitness == 0:
-                        break
-
-            except TimeoutError:
-                # If time limit is exceeded, move on to the next test
-                print(f"Skipping test for {word_count} words due to time limit")
-                continue
-
-            # Get the final fitness of the last generation
-            final_fitness = crossword[-1]
-
-            # Update average and maximum fitness results
-            avg_final_fitness += final_fitness
-            max_final_fitness = max(max_final_fitness, final_fitness)
-
-        # Calculate average fitness for the current word count
-        avg_final_fitness /= num_tests
-
-        avg_fitness_results.append(avg_final_fitness)
-        max_fitness_results.append(max_final_fitness)
-
-    return avg_fitness_results, max_fitness_results
-
-def plot_results(word_counts, avg_fitness_results, max_fitness_results):
-    plt.figure(figsize=(10, 6))
-
-    # Plot average fitness
-    plt.plot(word_counts, avg_fitness_results, label='Average Fitness', marker='o')
-
-    # Plot maximum fitness
-    plt.plot(word_counts, max_fitness_results, label='Maximum Fitness', marker='o')
-
-    plt.title('Average and Maximum Fitness vs Number of Input Words')
-    plt.xlabel('Number of Input Words')
-    plt.ylabel('Fitness')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-
-# Run tests and plot results
-avg_fitness_results, max_fitness_results = run_tests()
-plot_results([2, 3, 4], avg_fitness_results, max_fitness_results)
+    crossword_generator = CrosswordGenerator(words, grid_size, mutation_rate)
+    solution = crossword_generator.generate_crossword()
+    if solution[-1] != 0:
+        with open(f"outputs/output{i}.txt",
+                "w") as f:
+            f.write(f'The program have not solved the task')
+    else:
+        with open(f"outputs/output{i}.txt",
+                "w") as f:
+            for word in solution[:-1]:
+                a = word[1][0]
+                b = word[1][1]
+                if word[2] == 'h':
+                    c = 0
+                else:
+                    c = 1
+                f.write(f'{a} {b} {c}\n')
