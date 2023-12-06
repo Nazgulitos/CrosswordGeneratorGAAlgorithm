@@ -1,6 +1,7 @@
 import random
 import time
-
+import matplotlib.pyplot as plt
+import numpy as np
 
 def select_parents(population):
     """
@@ -149,9 +150,10 @@ class CrosswordGenerator:
         # Initial best crossword
         best_individual = select_best_individual(population)
         cnt += 1
-
+        # Set a time limit (e.g., 1 second) for each test
+        time_limit_per_test = 1.0
         # Loop that controls individuals generation
-        while best_individual[-1] != 0 and cnt != 100000:
+        while time.time() - start_time < time_limit_per_test and best_individual[-1] != 0 and cnt != 1000:
 
             temp_population = []
 
@@ -185,7 +187,7 @@ class CrosswordGenerator:
             cnt += 1
 
             # In case, when the population stucks in local maximum
-            if cnt == 50000:
+            if cnt == 500:
                 temp_population = self._initialize_population()
 
             # Update new population
@@ -403,12 +405,83 @@ class CrosswordGenerator:
                     grid[i + row[1][0]][row[1][1]] = self.words[index][i]
             index += 1
         for row in grid:
-            print('.'.join(row))
+            print(' '.join(row))
 
 
-words = ['zoo', 'goal', 'owl']
+words = ['apple', 'banana', 'ape']
 grid_size: int = 20
 max_population_size = 1000
 mutation_rate = 0.6
 crossword_generator = CrosswordGenerator(words, grid_size, mutation_rate)
 crossword = crossword_generator.generate_crossword()
+
+def run_tests():
+    num_tests = 100
+    word_counts = [2, 3, 4]  # You can extend this list with the desired word counts
+
+    avg_fitness_results = []
+    max_fitness_results = []
+
+    for word_count in word_counts:
+        avg_final_fitness = 0
+        max_final_fitness = 0
+
+        for _ in range(num_tests):
+            start_time = time.time()
+
+            # Initialize the CrosswordGenerator with a specific number of words
+            words_subset = words[:word_count]
+            crossword_generator = CrosswordGenerator(words_subset, grid_size, mutation_rate)
+
+            # Set a time limit (e.g., 1 second) for each run
+            time_limit = 1.0
+
+            try:
+                # Run the algorithm until time limit is reached
+                while time.time() - start_time < time_limit:
+                    crossword = crossword_generator.generate_crossword()
+                    final_fitness = crossword[-1]
+
+                    # If a solution is found, break out of the loop
+                    if final_fitness == 0:
+                        break
+
+            except TimeoutError:
+                # If time limit is exceeded, move on to the next test
+                print(f"Skipping test for {word_count} words due to time limit")
+                continue
+
+            # Get the final fitness of the last generation
+            final_fitness = crossword[-1]
+
+            # Update average and maximum fitness results
+            avg_final_fitness += final_fitness
+            max_final_fitness = max(max_final_fitness, final_fitness)
+
+        # Calculate average fitness for the current word count
+        avg_final_fitness /= num_tests
+
+        avg_fitness_results.append(avg_final_fitness)
+        max_fitness_results.append(max_final_fitness)
+
+    return avg_fitness_results, max_fitness_results
+
+def plot_results(word_counts, avg_fitness_results, max_fitness_results):
+    plt.figure(figsize=(10, 6))
+
+    # Plot average fitness
+    plt.plot(word_counts, avg_fitness_results, label='Average Fitness', marker='o')
+
+    # Plot maximum fitness
+    plt.plot(word_counts, max_fitness_results, label='Maximum Fitness', marker='o')
+
+    plt.title('Average and Maximum Fitness vs Number of Input Words')
+    plt.xlabel('Number of Input Words')
+    plt.ylabel('Fitness')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+# Run tests and plot results
+avg_fitness_results, max_fitness_results = run_tests()
+plot_results([2, 3, 4], avg_fitness_results, max_fitness_results)
