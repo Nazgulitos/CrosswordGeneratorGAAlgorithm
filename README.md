@@ -35,7 +35,4 @@ The fitness function evaluates the quality of a crossword puzzle. It penalizes d
 My rpogram can solve the task for a maximum of 4 words. For 5 or more words, it may get stuck in a local maximum, which I couldn't resolve.
 
 
-## License
-
-This project is licensed under the [MIT License](LICENSE).
 
